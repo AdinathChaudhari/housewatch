@@ -1,0 +1,38 @@
+# Local data — the SQLite db and its WAL/SHM siblings, wherever configured.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Single-instance lock, if one is ever written inside the checkout.
+*.pid
+
+# Local config — the real per-machine config, not config.example.toml.
+config.toml
+housewatch/config.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# Virtualenvs
+venv/
+.venv/
+
+# Private per house rule: the hero-image prompt + essence snapshot are a
+# personal speciality and never published — only the rendered PNG ships.
+docs/media/ABOUT-IMAGE.md
+
+# Editor/OS cruft
+.DS_Store

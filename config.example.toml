@@ -1,0 +1,106 @@
+# housewatch config — copy to ~/.config/housewatch/config.toml and edit,
+# or use `housewatch config` to change monthly_cap_gb / billing_cycle_start_day
+# without hand-editing TOML at all (see those two keys below).
+#
+# Every key here is optional: a missing file, or a missing key within it,
+# falls back to the default shown. Delete lines you don't want to override.
+# An unknown key in this file is a hard error at startup (typo protection).
+
+# How often to poll the router's UPnP counters, in seconds.
+#
+# This is NOT a "feel free to tune" knob. The router's byte counters are
+# 32-bit and wrap at 2**32 bytes (~4.3 GB). If two successful polls are far
+# enough apart that more than one wrap could have happened in between, the
+# collector cannot tell a normal increase from a double-wrapped decrease —
+# a silent undercount, not just a flagged one. poll_interval_s is validated
+# against max_link_mbps below (2**32*8 / (max_link_mbps*1e6) / 3) and startup
+# fails loudly if the value is unsafe rather than corrupting data quietly.
+poll_interval_s = 10.0
+
+# Router LAN IP to talk to. Leave unset (commented out — the default) to
+# auto-detect the current default gateway at every discovery attempt; that
+# is the right choice for nearly everyone. Only pin this if more than one
+# router-shaped device answers UPnP discovery on your network.
+# router_host = "192.0.2.1"
+
+# Planning rate (Mbps) used to derive every wrap-safety window: the
+# certainty window, the packet-recovery window, and the poll_interval_s
+# bound above. This is your WAN port's PHYSICAL CEILING, not your ISP plan
+# speed — a burst can briefly exceed the plan but never the port. 1000
+# (GbE) is the safe default for a typical home router's GbE WAN port.
+#
+# LOWERING THIS DOES NOT MAKE HOUSEWATCH MORE CAUTIOUS — IT MAKES IT LIE.
+# The value is a denominator in every proof about how many 4.295 GB counter
+# wraps could have happened between two polls. Lower it and the "certainty
+# window" WIDENS (1000 -> 34.4s, 200 -> 171.8s, 50 -> 687.2s), so gaps that
+# should be flagged unrecoverable get recorded as certain numbers that are
+# exactly 4,294,967,296 bytes per direction too low. Values below 1000 are
+# therefore rejected at startup unless you also set the opt-in below. This
+# can never be reliably auto-detected: routers commonly report placeholder/
+# bogus values on their own Layer1 rate fields, so housewatch never trusts
+# them — you telling it the port's real physical ceiling is the only sound
+# source for this number.
+max_link_mbps = 1000.0
+
+# Acknowledge a genuinely slower PHYSICAL link (e.g. a 100 Mbit WAN port).
+# Only set this if the port itself is slower — never to describe an ISP
+# plan. With it set, housewatch logs a WARNING at every load naming the
+# widened certainty window, so the trade-off stays visible.
+# i_know_my_link_is_slower = false
+
+# Monthly data cap in GB (decimal: 1 GB = 1e9 bytes), for the "X of Y GB
+# used" dashboard/menubar display. UNSET BY DEFAULT — usage is tracked
+# either way, with or without a cap. Set one without editing this file:
+#   python -m housewatch config set-cap <GB>
+# Example: an ISP quoting a 1 TB/month plan in decimal TB means
+# monthly_cap_gb = 1000.0 here (not 1024 — GB, not GiB; check which unit
+# your ISP actually bills in).
+#
+# Treat the cap readout as advisory, not as the ISP's own meter: these are
+# the ROUTER's WAN counters, they include router-originated traffic, and
+# any period the collector was not running is unmeasured rather than zero.
+# The dashboard shows unmeasured time explicitly for exactly this reason.
+# monthly_cap_gb = 1000.0
+
+# Day of the month your billing cycle starts on (1-28). Defaults to 1 (the
+# calendar month) — NOT any particular ISP's billing date, since housewatch
+# has no way to know that and guessing wrong would silently misreport your
+# cycle. Capped at 28, not 31, so "day N" means the same calendar day in
+# every month — see housewatch/config.py's MAX_BILLING_CYCLE_START_DAY
+# comment for the reasoning. Change it without hand-editing this file:
+#   python -m housewatch config set-cycle-day <1-28>
+billing_cycle_start_day = 1
+
+# "local" (the default) auto-resolves this machine's own system IANA zone
+# (via $TZ or the /etc/localtime symlink), so DST transitions are handled
+# correctly with zero setup. Otherwise give an IANA zone name directly,
+# e.g. "America/Chicago". Drives day-boundary bucketing and billing-cycle
+# boundaries, so get this right if housewatch runs somewhere other than
+# the machine whose usage you actually care about. Note that `days` rows
+# are bucketed with the timezone in force at write time: changing this
+# reshapes only future days, never rewrites history.
+timezone = "local"
+
+# Where the SQLite database lives. ~ is expanded; parent dirs are created
+# automatically.
+db_path = "~/Library/Application Support/housewatch/housewatch.db"
+
+# Local dashboard (Flask, loopback only — never expose web_host beyond
+# 127.0.0.1 without your own reverse proxy and auth in front of it).
+web_enabled = true
+web_host = "127.0.0.1"
+web_port = 8321
+
+# Per-call timeouts (seconds) for talking to the router.
+http_timeout_s = 5.0
+ssdp_timeout_s = 3.0
+
+# How long to keep each table's rows before housewatch prunes them.
+# retention_intervals_days must stay >= 45 (needs to cover a full billing
+# cycle plus the 30-day dashboard view).
+retention_samples_days = 7
+retention_intervals_days = 90
+retention_events_days = 90
+
+# DEBUG | INFO | WARNING | ERROR
+log_level = "INFO"

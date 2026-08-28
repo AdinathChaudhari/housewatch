@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent template for the housewatch MENUBAR app — separate from, and
+  independent of, the collector daemon's own LaunchAgent (label
+  com.housewatch.collector, see housewatch/cli.py's LAUNCHD_LABEL and
+  com.housewatch.collector.plist, which ./install.sh installs). Keeping
+  them as two agents means either can be stopped/restarted/crash-relaunched
+  without touching the other: killing the menubar (e.g. to free a stuck
+  NSStatusItem) must never interrupt polling, and a broken rumps/PyObjC
+  install must never take the collector down with it.
+
+  This file is a TEMPLATE: {PYTHON}, {WORKDIR}, {HOME} are placeholders,
+  rendered by housewatch.menubar.render_launchagent_plist(). ./install.sh
+  installs the COLLECTOR's agent only; the menubar app is optional and is
+  installed by hand:
+
+    sed -e "s|{PYTHON}|$(command -v python3)|g" \
+        -e "s|{WORKDIR}|$(pwd)|g" \
+        -e "s|{HOME}|$HOME|g" \
+        housewatch/menubar_launchagent.plist \
+        > ~/Library/LaunchAgents/com.housewatch.menubar.plist
+    mkdir -p ~/Library/Logs/housewatch
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.housewatch.menubar.plist
+
+  Stop with (never kill -9 — see menubar.py's stop_collector()/Quit for why:
+  bootout is what makes KeepAlive/RunAtLoad behave correctly on the next
+  login instead of immediately relaunching):
+
+    launchctl bootout gui/$(id -u)/com.housewatch.menubar
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.housewatch.menubar</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>{PYTHON}</string>
+    <string>-m</string>
+    <string>housewatch.menubar</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>{WORKDIR}</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- A menubar app that fails to draw its status item (rumps/PyObjC
+       exception, missing display session) should come back on its own;
+       an explicit Quit from the menu exits 0 and, same as the collector,
+       should stay quit until the next login rather than bounce right back. -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>{HOME}/Library/Logs/housewatch/menubar.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>{HOME}/Library/Logs/housewatch/menubar.err.log</string>
+
+  <!-- Aqua only: this process draws UI and must not be started before a
+       GUI session exists (e.g. at a headless boot before login). -->
+  <key>LimitLoadToSessionType</key>
+  <string>Aqua</string>
+
+  <key>ProcessType</key>
+  <string>Interactive</string>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>

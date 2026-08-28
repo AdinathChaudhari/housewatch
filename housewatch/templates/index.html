@@ -1,0 +1,74 @@
+<title>housewatch</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<header class="hw-header">
+  <h1>housewatch</h1>
+  <div class="hw-health">
+    <span class="hw-dot" id="hw-health-dot"></span>
+    <span id="hw-health-label">checking…</span>
+  </div>
+</header>
+
+<section class="hw-card">
+  <h2>This billing cycle</h2>
+  <div id="hw-cycle-body">
+    <div class="hw-empty">Loading…</div>
+  </div>
+</section>
+
+<section class="hw-card">
+  <h2>Today / Yesterday</h2>
+  <div id="hw-today-body">
+    <div class="hw-empty">Loading…</div>
+  </div>
+</section>
+
+<div class="hw-two-col">
+  <section class="hw-card">
+    <h2>Last days</h2>
+    <div class="hw-chart-controls">
+      <button data-days-range="7">7d</button>
+      <button data-days-range="30" class="active">30d</button>
+    </div>
+    <canvas id="hw-days-canvas" class="hw-chart"></canvas>
+    <div class="hw-legend">
+      <span><span class="swatch" style="background:var(--accent)"></span>download</span>
+      <span><span class="swatch" style="background:var(--accent-dim)"></span>upload</span>
+      <span><span class="swatch" style="background:var(--suspect)"></span>suspect subset</span>
+      <span><span class="swatch" style="background:var(--gap)"></span>unknown time (bottom strip)</span>
+    </div>
+  </section>
+
+  <section class="hw-card">
+    <h2>Rate over time</h2>
+    <div class="hw-chart-controls">
+      <button data-rate-range="60">1h</button>
+      <button data-rate-range="360">6h</button>
+      <button data-rate-range="1440" class="active">24h</button>
+    </div>
+    <canvas id="hw-rate-canvas" class="hw-chart"></canvas>
+    <div class="hw-legend">
+      <span><span class="swatch" style="background:var(--accent)"></span>down</span>
+      <span><span class="swatch" style="background:var(--accent-dim)"></span>up</span>
+      <span><span class="swatch" style="background:var(--gap)"></span>unknown (shaded, no line)</span>
+    </div>
+  </section>
+</div>
+
+<section class="hw-card">
+  <h2>Gap / suspect / reset / anomaly windows (last 30 days)</h2>
+  <div id="hw-unknown-body">
+    <div class="hw-empty">Loading…</div>
+  </div>
+</section>
+
+<div class="hw-footer">
+  polling every {{ poll_interval_s }}s &middot; served on 127.0.0.1:{{ web_port }} (loopback only)
+  {% if not has_cap %} &middot; no monthly cap configured{% endif %}
+</div>
+
+<script>window.HW_POLL_INTERVAL_S = {{ poll_interval_s | tojson }};</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
