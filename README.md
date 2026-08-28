@@ -9,7 +9,7 @@ Topics (17, ranked): bandwidth-monitoring, wan-monitoring, data-usage-tracker,
   network-monitoring, data-cap, upnp, upnp-igd, router, python, sqlite,
   flask, macos, cli, daemon, launchd, menu-bar-app, self-hosted
 
-Social preview: docs/media/hero.png at 1280x640, once it exists.
+Social preview: docs/media/hero.png — set it in Settings > Social preview.
 -->
 
 # housewatch — Whole-House WAN Data Tracker
@@ -20,7 +20,9 @@ Social preview: docs/media/hero.png at 1280x640, once it exists.
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 ![macOS](https://img.shields.io/badge/platform-macOS-lightgrey)
 
-<!-- ![hero](docs/media/hero.png) — one motif image, once generated. Keep commented out until the asset exists. -->
+<p align="center">
+  <img src="docs/media/hero.png" alt="housewatch — a usage ring on a dark field, one segment left unlit" width="720">
+</p>
 
 Routers already count every byte in and out on the WAN port — housewatch just reads that counter honestly. It corrects for the counter wrapping at 2³² bytes and for router reboots, tracks the result against a billing cycle and an optional cap, and refuses to invent a number for any stretch it didn't actually observe.
 

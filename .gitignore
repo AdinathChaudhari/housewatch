@@ -36,3 +36,9 @@ docs/media/ABOUT-IMAGE.md
 
 # Editor/OS cruft
 .DS_Store
+
+# Derived social card, generated from hero.png and uploaded straight to
+# GitHub Settings > Social preview. No repo in this fleet commits it —
+# hero.png is the source of truth. Regenerate with:
+#   python Tools/image_compress.py docs/media/hero.png 1MB --glass
+docs/media/hero-glass.jpg
