@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from housewatch import cli
+from housewatch import cli, menubar
 from housewatch import config as config_mod
 from housewatch import igd
 from housewatch.config import Config, ConfigError
@@ -135,9 +135,28 @@ def test_launchd_label_matches_the_plist_that_actually_gets_installed() -> None:
     assert parsed["Label"] == cli.LAUNCHD_LABEL
 
 
+def test_menubar_label_matches_the_plist_that_actually_gets_installed() -> None:
+    """Same pin as the collector's, for the second agent.
+
+    `./install.sh --with-menubar` renders this template; menubar.py addresses
+    the agent by the constant. A mismatch would make `make menubar-stop` and
+    the app's own Quit silently no-op.
+    """
+    plist_path = PROJECT_ROOT / "housewatch" / "menubar_launchagent.plist"
+    parsed = plistlib.loads(plist_path.read_bytes())
+    assert parsed["Label"] == menubar.MENUBAR_LAUNCHD_LABEL
+
+
 @pytest.mark.parametrize("script", ["install.sh", "uninstall.sh", "Makefile"])
-def test_shell_installers_use_the_same_label(script: str) -> None:
-    """The shell side hardcodes the label too; pin every copy to cli.py's."""
+def test_shell_installers_use_only_known_labels(script: str) -> None:
+    """The shell side hardcodes the labels too; pin every copy to the code's.
+
+    Since the menubar became installable (`--with-menubar`), these files name
+    TWO labels rather than one. The check is therefore "every label named here
+    is one the code actually knows about", not "there is exactly one" — a typo
+    or a stale personal namespace still fails, which is the drift this test
+    exists to catch.
+    """
     text = (PROJECT_ROOT / script).read_text(encoding="utf-8")
     # Strip a trailing '.plist' so the filename reference counts as the same
     # label, not a second one.
@@ -145,10 +164,14 @@ def test_shell_installers_use_the_same_label(script: str) -> None:
         m.removesuffix(".plist")
         for m in re.findall(r"com\.[A-Za-z0-9_.]*housewatch[A-Za-z0-9_.]*", text)
     }
+    known = {cli.LAUNCHD_LABEL, menubar.MENUBAR_LAUNCHD_LABEL}
     assert labels, f"{script} names no housewatch launchd label at all"
-    assert labels == {cli.LAUNCHD_LABEL}, (
-        f"{script} uses {sorted(labels)}, but cli.LAUNCHD_LABEL is "
-        f"{cli.LAUNCHD_LABEL!r}"
+    assert labels <= known, (
+        f"{script} uses unknown label(s) {sorted(labels - known)}; "
+        f"the code knows only {sorted(known)}"
+    )
+    assert cli.LAUNCHD_LABEL in labels, (
+        f"{script} never names the collector label {cli.LAUNCHD_LABEL!r}"
     )
 
 

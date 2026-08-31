@@ -32,7 +32,8 @@ Routers already count every byte in and out on the WAN port — housewatch just 
 |---|---|---|
 | **Check** usage right now | `python -m housewatch status` | Today's usage, cycle vs. cap, last-sample age — read-only |
 | **See** it in a browser | `python -m housewatch serve` | Local dashboard at `127.0.0.1:8321` |
-| **Run** it unattended | `./install.sh` | Installs the LaunchAgent, survives logout/reboot |
+| **Run** it unattended | `./install.sh` | Installs the collector LaunchAgent, survives logout/reboot |
+| **Glance** at it | `./install.sh --with-menubar` | Menu-bar readout; its "Open Dashboard" starts the web UI for you |
 | **Diagnose** a problem | `python -m housewatch doctor` | Checks router reachability, db, LaunchAgent in one pass |
 
 ## Quick start
@@ -149,7 +150,17 @@ python3 -m venv .venv
 
 > The router's counters are not your ISP's billing meter — they include router-originated traffic and count at a different point in the network than your provider does. Expect a small (typically a few percent) divergence from whatever your ISP reports; treat the cap and projection numbers as advisory, not authoritative.
 
-To survive logout/reboot, run `./install.sh` from the checkout. It resolves an interpreter (`HOUSEWATCH_PYTHON`, else this repo's own `.venv`, else whatever `python3` is on `PATH`), verifies it can actually import `housewatch` *before* touching launchd, renders `com.housewatch.collector.plist` with real absolute paths, and bootstraps it. Safe to re-run any time — it boots out the old instance first. Stop it with `launchctl bootout gui/$(id -u)/com.housewatch.collector`, never by killing the process (`KeepAlive={SuccessfulExit: false}` means a killed process relaunches, but a clean `bootout` stays stopped). `./uninstall.sh` removes it entirely.
+To survive logout/reboot, run `./install.sh` from the checkout. It resolves an interpreter (`HOUSEWATCH_PYTHON`, else this repo's own `.venv`, else whatever `python3` is on `PATH`), verifies it can actually import `housewatch` *before* touching launchd, renders `com.housewatch.collector.plist` with real absolute paths, and bootstraps it. Safe to re-run any time — it boots out the old instance first.
+
+The **menu-bar app is a second, optional agent**: `./install.sh --with-menubar`
+(or `make install-menubar`) installs both; `--menubar-only` installs just it.
+It shows today's usage — or cycle progress once a cap is set — and its *Open
+Dashboard* item starts the web server itself, so you never have to leave
+`serve` running in a terminal. They are deliberately two agents rather than
+one: the collector holds the single-writer lock on the database, and a
+rumps/PyObjC failure drawing a status item must never be able to interrupt
+polling. Stop or start just the menu bar with `make menubar-stop` /
+`make menubar-start`. `./uninstall.sh` removes both. Stop it with `launchctl bootout gui/$(id -u)/com.housewatch.collector`, never by killing the process (`KeepAlive={SuccessfulExit: false}` means a killed process relaunches, but a clean `bootout` stays stopped). `./uninstall.sh` removes it entirely.
 
 Where things end up:
 

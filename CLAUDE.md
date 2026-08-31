@@ -175,7 +175,9 @@ corrupting data quietly.
 
 Also on disk at the project root: `com.housewatch.collector.plist` (the
 collector's LaunchAgent template), `housewatch/menubar_launchagent.plist`
-(the menubar's, a separate optional agent), `install.sh`, `uninstall.sh`,
+(the menubar's, a separate optional agent — `./install.sh --with-menubar`
+renders and loads it; plain `./install.sh` installs the collector only, so a
+headless or Linux host is never blocked on rumps), `install.sh`, `uninstall.sh`,
 `Makefile`, `config.example.toml`, `docs/DECISIONS.md`.
 
 **LaunchAgent labels are `com.housewatch.collector` and
@@ -245,6 +247,16 @@ None of these are needed for routine `counters.py`/`billing.py`/`store.py`
 work; those three are pure and fully covered by mocked/synthetic tests.
 
 ## Landmines
+
+- **The menubar and the collector are two agents on purpose — keep them that
+  way.** `install.sh` installs the collector by default and the menubar only
+  behind `--with-menubar`/`--menubar-only`; `uninstall.sh` removes both
+  (menubar first, since it offers Start/Stop Collector controls that would
+  otherwise point at a service already gone). Merging them into one agent
+  would put a rumps/PyObjC status-item failure in the same process as the
+  single db writer — a UI crash would then cost data, which is exactly the
+  trade this split exists to avoid. `rumps` is checked at install time only
+  when the menubar is actually requested.
 
 - **`counters.py` must stay pure.** No `time.time()`, no network, no sqlite
   inside that module or its helpers. The instant it needs a fixture instead

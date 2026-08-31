@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# uninstall.sh — stop and remove the housewatch LaunchAgent.
+# uninstall.sh — stop and remove housewatch's LaunchAgents.
+#
+# Removes BOTH the collector and (if installed) the menubar agent. They are
+# installed separately — ./install.sh --with-menubar — but there is no reason
+# to leave a menubar running against a collector that is gone, so uninstall
+# takes both.
 #
 # By default this ONLY touches the LaunchAgent: it boots the service out of
 # launchd and deletes the installed plist. Your config
@@ -86,20 +91,28 @@ fi
 # ---------------------------------------------------------------------------
 # Stop + unload the agent
 # ---------------------------------------------------------------------------
-if launchctl print "${SERVICE_TARGET}" >/dev/null 2>&1; then
-  echo "-- stopping ${SERVICE_TARGET} --"
-  launchctl bootout "${SERVICE_TARGET}"
-  echo "   stopped."
-else
-  echo "-- ${SERVICE_TARGET} is not loaded, nothing to stop --"
-fi
+# The menubar is stopped FIRST: it offers Start/Stop Collector controls, so
+# taking the collector out from under a live menubar would leave it showing
+# stale numbers and a dead control for as long as it took to reach it here.
+for _label in "com.housewatch.menubar" "${LABEL}"; do
+  _target="${DOMAIN}/${_label}"
+  _plist="${LAUNCH_AGENTS_DIR}/${_label}.plist"
 
-if [[ -f "${PLIST_DEST}" ]]; then
-  rm -f "${PLIST_DEST}"
-  echo "-- removed ${PLIST_DEST} --"
-else
-  echo "-- ${PLIST_DEST} does not exist, nothing to remove --"
-fi
+  if launchctl print "${_target}" >/dev/null 2>&1; then
+    echo "-- stopping ${_target} --"
+    launchctl bootout "${_target}"
+    echo "   stopped."
+  else
+    echo "-- ${_target} is not loaded, nothing to stop --"
+  fi
+
+  if [[ -f "${_plist}" ]]; then
+    rm -f "${_plist}"
+    echo "-- removed ${_plist} --"
+  else
+    echo "-- ${_plist} does not exist, nothing to remove --"
+  fi
+done
 
 echo
 if [[ "${PURGE}" -eq 0 ]]; then

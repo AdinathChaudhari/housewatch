@@ -531,3 +531,48 @@ that is arithmetic from the six-interval sample above, not an observation.
   billing meter** — expected to be "a few percent," per general knowledge
   of router-vs-ISP counter differences (framing overhead, router-originated
   traffic, retransmits), not measured against a real ISP bill.
+
+---
+
+## D-012 — The menu-bar app is a second LaunchAgent, and opt-in
+
+**Decision:** `housewatch` installs two independent LaunchAgents, not one.
+`./install.sh` loads `com.housewatch.collector` only. The menu-bar app
+(`com.housewatch.menubar`) is loaded solely by `--with-menubar` or
+`--menubar-only`. `uninstall.sh` removes both.
+
+**Why two agents rather than one process.** The collector holds the single
+writer lock on the database. The menu bar draws an `NSStatusItem` through
+rumps/PyObjC, which is by a wide margin the most fragile dependency in the
+project — it is the only one that needs a GUI session, a working Objective-C
+bridge, and a display server. Putting both in one process means any status-item
+failure takes down data collection with it, and under `KeepAlive` it would take
+it down repeatedly. Split, the worst case for a rumps crash is a missing menu
+bar icon; the numbers keep accruing. The reverse also holds: stopping the menu
+bar to free a stuck status item never interrupts polling.
+
+**Why opt-in rather than installed by default.** `rumps` is the project's only
+GUI dependency and the only one that cannot work headless. The intended next
+host is a Raspberry Pi, where a menu bar is meaningless and rumps may not
+install at all. Making it opt-in keeps `./install.sh` working on a machine
+with no display, and keeps the rumps import check out of the default path.
+
+**Why uninstall takes both, in that order.** The menu bar offers Start/Stop
+Collector controls. Removing the collector first would leave a live menu bar
+showing stale numbers behind a control pointing at a service that no longer
+exists. Menu bar out first, then the collector.
+
+**Rejected:** a single agent with a `--no-menubar` flag (inverts the default in
+favour of the more fragile component); launching the menu bar as a subprocess of
+the collector (couples their lifetimes again, and puts UI in the writer's
+process tree); shipping the menu bar as a `.app` bundle (a build step and a
+signing story for something that is 700 lines of Python).
+
+**What would change the answer:** if rumps were ever replaced by something that
+works headless and has no native-bridge failure mode, the isolation argument
+weakens and one agent would be simpler.
+
+**Verified:** `./install.sh --with-menubar` renders and loads both agents;
+`plutil -lint` passes on both rendered plists; `tests/test_cli.py` pins the two
+labels against the plists, `install.sh`, `uninstall.sh` and the `Makefile`,
+which is what caught them disagreeing once before.
