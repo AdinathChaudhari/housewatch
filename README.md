@@ -21,7 +21,7 @@ Social preview: docs/media/hero.png — set it in Settings > Social preview.
 ![macOS](https://img.shields.io/badge/platform-macOS-lightgrey)
 
 <p align="center">
-  <img src="docs/media/hero.png" alt="housewatch — a usage ring on a dark field, one segment left unlit" width="720">
+  <img src="docs/media/hero-rounded.png" alt="housewatch — a usage ring on a dark field, one segment left unlit" width="720">
 </p>
 
 Routers already count every byte in and out on the WAN port — housewatch just reads that counter honestly. It corrects for the counter wrapping at 2³² bytes and for router reboots, tracks the result against a billing cycle and an optional cap, and refuses to invent a number for any stretch it didn't actually observe.
